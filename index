@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Split Sheet Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #45a049;
+    }
+    .participant-list {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Split Sheet Generator</h1>
+  <form id="splitForm">
+    <div class="form-group">
+      <label for="songTitle">Título de la Canción:</label>
+      <input type="text" id="songTitle" placeholder="Ingrese el título de la canción" required>
+    </div>
+    <div class="form-group">
+      <label for="creationDate">Fecha de Creación:</label>
+      <input type="date" id="creationDate" required>
+    </div>
+    <div class="form-group">
+      <label for="isrc">ISRC (Opcional):</label>
+      <input type="text" id="isrc" placeholder="Ingrese el ISRC">
+    </div>
+    <div class="form-group">
+      <label for="duration">Duración:</label>
+      <input type="text" id="duration" placeholder="Ejemplo: 3:45">
+    </div>
+    <h2>Participantes</h2>
+    <div id="participants">
+      <div class="form-group">
+        <label>Nombre del Participante:</label>
+        <input type="text" class="participant-name" placeholder="Nombre completo" required>
+        <label>Porcentaje (%):</label>
+        <input type="number" class="participant-percent" placeholder="Porcentaje de participación" required>
+        <label>Afiliación:</label>
+        <input type="text" class="participant-affiliation" placeholder="Ejemplo: ASCAP, BMI">
+        <label>IPI/Code:</label>
+        <input type="text" class="participant-ipi" placeholder="Código IPI">
+      </div>
+    </div>
+    <button type="button" onclick="addParticipant()">Agregar Participante</button>
+    <button type="button" class="btn" onclick="generatePDF()">Generar PDF</button>
+  </form>
+
+  <script>
+    function addParticipant() {
+      const participantsDiv = document.getElementById("participants");
+      const newParticipant = `
+        <div class="form-group">
+          <label>Nombre del Participante:</label>
+          <input type="text" class="participant-name" placeholder="Nombre completo" required>
+          <label>Porcentaje (%):</label>
+          <input type="number" class="participant-percent" placeholder="Porcentaje de participación" required>
+          <label>Afiliación:</label>
+          <input type="text" class="participant-affiliation" placeholder="Ejemplo: ASCAP, BMI">
+          <label>IPI/Code:</label>
+          <input type="text" class="participant-ipi" placeholder="Código IPI">
+        </div>
+      `;
+      participantsDiv.insertAdjacentHTML("beforeend", newParticipant);
+    }
+
+    async function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      const songTitle = document.getElementById("songTitle").value;
+      const creationDate = document.getElementById("creationDate").value;
+      const isrc = document.getElementById("isrc").value;
+      const duration = document.getElementById("duration").value;
+
+      const participantNames = document.querySelectorAll(".participant-name");
+      const participantPercents = document.querySelectorAll(".participant-percent");
+      const participantAffiliations = document.querySelectorAll(".participant-affiliation");
+      const participantIpis = document.querySelectorAll(".participant-ipi");
+
+      let content = `Split Sheet\n\nAcuerdo de División de Derechos de una Obra Musical\n\n`;
+      content += `Título de la canción: ${songTitle}\n`;
+      content += `Fecha de creación: ${creationDate}\n`;
+      content += `ISRC (si aplica): ${isrc || "N/A"}\n`;
+      content += `Duración: ${duration || "N/A"}\n\n`;
+      content += `Declaración:\nLos abajo firmantes acuerdan que son coautores de la obra musical identificada anteriormente y aceptan la siguiente división de los derechos de autor y participación en regalías. Este acuerdo es vinculante y será utilizado para fines de administración editorial, distribución y licencias.\n\n`;
+      content += `Información de los Coautores:\n\n`;
+      content += `Nombre completo\tPorcentaje (%)\tEntidad de Afiliación\tIPI/CODE\n`;
+
+      participantNames.forEach((_, i) => {
+        const name = participantNames[i].value;
+        const percent = participantPercents[i].value;
+        const affiliation = participantAffiliations[i].value || "N/A";
+        const ipi = participantIpis[i].value || "N/A";
+
+        content += `${name}\t${percent}%\t${affiliation}\t${ipi}\n`;
+      });
+
+      content += `\nTérminos y Condiciones:\n`;
+      content += `1. Derechos de Propiedad Intelectual: Los firmantes acuerdan que cada porcentaje representa su participación en los derechos de autor de esta obra musical.\n`;
+      content += `2. Licencias y Administración: Cada coautor tiene derecho a registrar y administrar su participación a través de la entidad correspondiente (sociedad de gestión colectiva o administrador editorial).\n`;
+      content += `3. Resolución de Conflictos: En caso de disputa, las partes intentarán resolver el conflicto mediante mediación antes de tomar acciones legales.\n`;
+      content += `4. Jurisdicción: Este acuerdo estará regido por las leyes de ______________ (insertar jurisdicción aplicable).\n\n`;
+      content += `Firmas:\n\nAl firmar este documento, los coautores confirman que los datos proporcionados son correctos y aceptan los términos establecidos en este acuerdo.\n`;
+
+      pdf.text(content, 10, 10);
+      pdf.save(`${songTitle || "Split_Sheet"}.pdf`);
+    }
+  </script>
+</body>
+</html>
